@@ -46,6 +46,7 @@ public abstract class Item {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof Item)) return false;
+        
         return itemId.equals(((Item) o).itemId);
     }
  

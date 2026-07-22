@@ -2,8 +2,8 @@ package main.java.com.matcheww.workshop.model;
 
 /**
  * Couples an {@link Item} with a quantity. Kept separate from {@link Slot}
- * so that "what item" and "how many" can be manipulated (merged, split,
- * moved) independently of any particular inventory slot.
+ * so that "what item" and "how many" can be manipulated (merge, split, move)
+ * independently of any particular inventory slot.
  */
 public class ItemStack {
     private final Item item; // single reference to the item
@@ -29,10 +29,6 @@ public class ItemStack {
         return quantity;
     }
  
-    public boolean isEmpty() {
-        return quantity <= 0;
-    }
- 
     public boolean isFull() {
         return quantity >= item.getMaxStackSize();
     }
@@ -41,43 +37,50 @@ public class ItemStack {
         return item.getMaxStackSize() - quantity;
     }
  
-    public boolean canMergeWith(ItemStack other) {
-        return other != null && other.item.equals(this.item) && !isFull();
+    public boolean canMergeWith(ItemStack otherItemStack) {
+        return otherItemStack != null && otherItemStack.item.equals(this.item) && !isFull();
     }
  
     /**
-     * Adds up to {@code amount} to this stack, capped by the item's max stack size.
+     * Adds up to {@code quantityToAdd} to this stack, capped by the item's max stack size.
      * @return the leftover amount that did NOT fit (0 if everything fit)
      */
-    public int addQuantity(int amount) {
-        if (amount < 0) {
+    public int addQuantity(int quantityToAdd) {
+        if (quantityToAdd < 0) {
             throw new IllegalArgumentException("amount cannot be negative");
         }
+
         int spaceLeft = getRemainingCapacity();
-        int added = Math.min(amount, spaceLeft);
+        int added = Math.min(quantityToAdd, spaceLeft);
         quantity += added;
-        return amount - added;
+
+        return quantityToAdd - added;
     }
  
     /** @return true if the removal succeeded (enough quantity was available) */
-    public boolean removeQuantity(int amount) {
-        if (amount < 0) {
+    public boolean removeQuantity(int quantityToRemove) {
+        if (quantityToRemove < 0) {
             throw new IllegalArgumentException("amount cannot be negative");
         }
-        if (amount > quantity) {
+
+        if (quantityToRemove >= quantity) {
             return false;
         }
-        quantity -= amount;
+
+        quantity -= quantityToRemove;
+
         return true;
     }
  
-    /** Splits off a new stack of {@code amount}, shrinking this stack in place. */
-    public ItemStack split(int amount) {
-        if (amount <= 0 || amount >= quantity) {
-            throw new IllegalArgumentException("invalid split amount: " + amount);
+    /** Splits off a new stack of {@code quantityToSplit}, shrinking this stack in place. */
+    public ItemStack split(int quantityToSplit) {
+        if (quantityToSplit <= 0 || quantityToSplit >= quantity) {
+            throw new IllegalArgumentException("invalid split amount: " + quantityToSplit);
         }
-        quantity -= amount;
-        return new ItemStack(item, amount);
+
+        quantity -= quantityToSplit;
+
+        return new ItemStack(item, quantityToSplit);
     }
  
     @Override
