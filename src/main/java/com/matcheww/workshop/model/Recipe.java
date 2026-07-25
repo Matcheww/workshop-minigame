@@ -1,4 +1,4 @@
-package main.java.com.matcheww.workshop.model;
+package com.matcheww.workshop.model;
 
 /**
  * Abstract base for anything that turns an input pattern into an

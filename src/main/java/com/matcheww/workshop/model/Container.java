@@ -1,4 +1,4 @@
-package main.java.com.matcheww.workshop.model;
+package com.matcheww.workshop.model;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;

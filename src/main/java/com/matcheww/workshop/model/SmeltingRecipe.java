@@ -1,4 +1,4 @@
-package main.java.com.matcheww.workshop.model;
+package com.matcheww.workshop.model;
 
 public class SmeltingRecipe extends Recipe {
     private final Item inputItem;

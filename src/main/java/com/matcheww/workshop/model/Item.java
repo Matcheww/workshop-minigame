@@ -1,4 +1,4 @@
-package main.java.com.matcheww.workshop.model;
+package com.matcheww.workshop.model;
 
 /**
  * Abstract base class for every item type in the game.

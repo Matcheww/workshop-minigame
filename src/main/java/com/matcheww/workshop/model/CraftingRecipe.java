@@ -1,27 +1,44 @@
-package main.java.com.matcheww.workshop.model;
-import java.util.Arrays;
+package com.matcheww.workshop.model;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 public class CraftingRecipe extends Recipe {
-    private final Item[][] pattern;
+    private final List<List<Item>> pattern;
 
     public CraftingRecipe(Item[][] pattern, ItemStack output) {
         super(output);
-        this.pattern = pattern;
+        this.pattern = deepCopy(pattern);
+    }
+
+    /** Copies the caller's array into an unmodifiable structure so external
+     *  mutation of the original array can never change this recipe afterward. */
+    private static List<List<Item>> deepCopy(Item[][] source) {
+        List<List<Item>> copy = new ArrayList<>();
+
+        for (Item[] row : source) {
+            List<Item> rowCopy = new ArrayList<>();
+            Collections.addAll(rowCopy, row);
+            copy.add(Collections.unmodifiableList(rowCopy));
+        }
+
+        return Collections.unmodifiableList(copy); // also lock the outterpart of 2d arraylist
     }
 
     @Override
     public boolean matches(Item[][] input) {
-        if (input == null || input.length != pattern.length) {
+        if (input == null || input.length != pattern.size()) {
             return false;
         }
 
-        for (int row = 0; row < pattern.length; row++) {
-            if (input[row].length != pattern[row].length) {
+        for (int row = 0; row < pattern.size(); row++) {
+            List<Item> expectedRow = pattern.get(row);
+            if (input[row].length != expectedRow.size()) {
                 return false;
             }
 
-            for (int col = 0; col < pattern[row].length; col++) {
-                Item expected = pattern[row][col];
+            for (int col = 0; col < expectedRow.size(); col++) {
+                Item expected = expectedRow.get(col);
                 Item actual = input[row][col];
                 
                 /*
@@ -43,6 +60,6 @@ public class CraftingRecipe extends Recipe {
 
     @Override
     public String toString() {
-        return "CraftingRecipe{pattern=" + Arrays.deepToString(pattern) + ", output=" + output + "}";
+        return "CraftingRecipe{pattern=" + pattern + ", output=" + output + "}";
     }
 }

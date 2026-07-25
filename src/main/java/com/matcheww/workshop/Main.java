@@ -1,7 +1,7 @@
-package main.java.com.matcheww.workshop;
+package com.matcheww.workshop;
 
 public class Main {
-    public static void Main(String[] args){
+    public static void main(String[] args){
         //
     }
 }

@@ -1,4 +1,4 @@
-package main.java.com.matcheww.workshop.model;
+package com.matcheww.workshop.model;
 
 /**
  * Couples an {@link Item} with a quantity. Kept separate from {@link Slot}

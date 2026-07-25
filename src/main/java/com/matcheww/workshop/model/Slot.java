@@ -1,4 +1,4 @@
-package main.java.com.matcheww.workshop.model;
+package com.matcheww.workshop.model;
 
 /**
  * A single inventory slot. Holds zero or one {@link ItemStack}.

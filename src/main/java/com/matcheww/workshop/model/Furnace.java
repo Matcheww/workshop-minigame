@@ -1,4 +1,4 @@
-package main.java.com.matcheww.workshop.model;
+package com.matcheww.workshop.model;
 
 /**
  * A furnace with 3 fixed slots: input, fuel, output. {@code tick()} is
