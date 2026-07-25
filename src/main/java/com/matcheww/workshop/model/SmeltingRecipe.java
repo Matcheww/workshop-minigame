@@ -30,7 +30,9 @@ public class SmeltingRecipe extends Recipe {
         if (input == null || input.length == 0 || input[0].length == 0) {
             return false;
         }
+
         Item candidate = input[0][0];
+        
         return candidate != null && candidate.equals(inputItem);
     }
 }

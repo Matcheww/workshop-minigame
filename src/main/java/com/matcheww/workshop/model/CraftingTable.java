@@ -24,12 +24,14 @@ public class CraftingTable extends Container {
     /** Snapshots the current grid contents as a 3x3 item pattern (nulls for empty slots). */
     public Item[][] getPattern() {
         Item[][] pattern = new Item[ROWS][COLS];
+
         for (int row = 0; row < ROWS; row++) {
             for (int col = 0; col < COLS; col++) {
                 Slot slot = slots.get(row * COLS + col);
                 pattern[row][col] = slot.isEmpty() ? null : slot.getItemStack().getItem();
             }
         }
+        
         return pattern;
     }
 
