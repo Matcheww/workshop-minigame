@@ -1,0 +1,74 @@
+.game-root {
+    -fx-background-color: #2B2B2B;
+}
+
+.crafting-table-region,
+.furnace-region {
+    -fx-background-color: #C6C6C6;
+    -fx-border-color: #373737;
+    -fx-border-width: 3px;
+}
+
+.hotbar-view,
+.item-container-view,
+.inventory-view {
+    -fx-background-color: #C6C6C6;
+    -fx-border-color: #373737;
+    -fx-border-width: 3px;
+}
+
+.placeholder-label {
+    -fx-text-fill: #3E3E3E;
+    -fx-font-size: 12px;
+}
+
+.inventory-toggle-button {
+    -fx-background-color: #8B8B8B;
+    -fx-text-fill: #FFFFFF;
+    -fx-border-color: #373737;
+    -fx-border-width: 2px;
+}
+
+.container-view {
+    -fx-padding: 4px;
+}
+
+.slot {
+    -fx-background-color: #8B8B8B;
+    -fx-border-color: #373737;
+    -fx-border-width: 2px;
+}
+
+.slot-icon-label {
+    -fx-text-fill: #FFFFFF;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+}
+
+.slot-quantity-label {
+    -fx-text-fill: #FFFFFF;
+    -fx-font-size: 10px;
+    -fx-font-weight: bold;
+}
+
+.drag-ghost {
+    -fx-opacity: 0.85;
+}
+
+.crafting-table-view,
+.furnace-view {
+    -fx-background-color: #C6C6C6;
+    -fx-border-color: #373737;
+    -fx-border-width: 3px;
+    -fx-padding: 10px;
+}
+
+.crafting-arrow-label {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #3E3E3E;
+}
+
+.smelt-progress-bar {
+    -fx-accent: #D85A30;
+}
