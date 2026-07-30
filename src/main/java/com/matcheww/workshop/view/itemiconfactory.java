@@ -7,7 +7,7 @@ import javafx.scene.paint.Color;
  * View-layer helper that derives a placeholder visual (a color and a short
  * abbreviation) for any Item, using only the Item base class's own public
  * API - no instanceof chains against concrete subclasses like OakLog or
- * CoalOre, and no image assets required.
+ * Coal, and no image assets required.
  *
  * Because it reads only getItemId()/getName(), it automatically supports
  * every future Item subclass with zero changes here, matching the Model's

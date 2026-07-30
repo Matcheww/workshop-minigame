@@ -1,21 +1,26 @@
 package com.matcheww.workshop.controller;
 
-import com.matcheww.workshop.model.CoalOre;
 import com.matcheww.workshop.model.CraftingRecipe;
 import com.matcheww.workshop.model.CraftingTable;
 import com.matcheww.workshop.model.Furnace;
 import com.matcheww.workshop.model.Hotbar;
 import com.matcheww.workshop.model.Inventory;
-import com.matcheww.workshop.model.IronOre;
 import com.matcheww.workshop.model.Item;
 import com.matcheww.workshop.model.ItemContainer;
 import com.matcheww.workshop.model.ItemStack;
-import com.matcheww.workshop.model.OakLog;
 import com.matcheww.workshop.model.RecipeBank;
 import com.matcheww.workshop.model.SmeltingRecipe;
 import com.matcheww.workshop.model.Slot;
-import com.matcheww.workshop.model.Stick;
-import com.matcheww.workshop.model.WoodenPlanks;
+import com.matcheww.workshop.model.minecraftitems.Coal;
+import com.matcheww.workshop.model.minecraftitems.IronIngot;
+import com.matcheww.workshop.model.minecraftitems.IronOre;
+import com.matcheww.workshop.model.minecraftitems.OakLog;
+import com.matcheww.workshop.model.minecraftitems.Stick;
+import com.matcheww.workshop.model.minecraftitems.WoodenPlanks;
+import com.matcheww.workshop.model.minecraftitems.IronHelmet;
+import com.matcheww.workshop.model.minecraftitems.IronChestplate;
+import com.matcheww.workshop.model.minecraftitems.IronLeggings;
+import com.matcheww.workshop.model.minecraftitems.IronBoots;
 
 import java.util.List;
 import java.util.Random;
@@ -48,8 +53,13 @@ public class GameController {
             OakLog::new,
             WoodenPlanks::new,
             Stick::new,
-            CoalOre::new,
-            IronOre::new
+            Coal::new,
+            IronOre::new,
+            IronIngot::new,
+            IronHelmet::new,
+            IronChestplate::new,
+            IronLeggings::new,
+            IronBoots::new
     );
 
     private static final int MAX_RANDOM_QUANTITY = 20;
@@ -93,12 +103,6 @@ public class GameController {
     /**
      * DEMO DATA ONLY. Proves the crafting/smelting pipeline end-to-end
      * using only the Item subclasses that already exist in the Model.
-     *
-     * The smelting recipe below (IronOre -> WoodenPlanks) is a
-     * placeholder, not a real design intention - a real smelting recipe
-     * would output a distinct item, such as an IronIngot, which does not
-     * exist in the Model yet. Flagged here rather than added, since the
-     * Model is source of truth and not to be changed without discussion.
      */
     private void seedRecipes() {
         Item[][] stickPattern = {
@@ -108,7 +112,7 @@ public class GameController {
         };
         
         recipeBank.registerCraftingRecipe(new CraftingRecipe(stickPattern, new ItemStack(new WoodenPlanks(), 4)));
-        recipeBank.registerSmeltingRecipe(new SmeltingRecipe(new IronOre(), new ItemStack(new WoodenPlanks(), 1), 5));
+        recipeBank.registerSmeltingRecipe(new SmeltingRecipe(new IronOre(), new ItemStack(new IronIngot(), 1), 10));
     }
 
     public Hotbar getHotbar() {
