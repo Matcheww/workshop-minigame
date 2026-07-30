@@ -23,23 +23,24 @@ final class ItemIconFactory {
         int hash = Math.abs(item.getItemId().hashCode());
         double hue = hash % 360;
         Color color = Color.hsb(hue, 0.55, 0.80);
-        return String.format("#%02X%02X%02X",
-                Math.round(color.getRed() * 255),
-                Math.round(color.getGreen() * 255),
-                Math.round(color.getBlue() * 255));
+
+        return String.format("#%02X%02X%02X", Math.round(color.getRed() * 255), Math.round(color.getGreen() * 255), Math.round(color.getBlue() * 255));
     }
 
     static String abbreviationFor(Item item) {
-        String[] words = item.getName().trim().split("\\s+");
         StringBuilder abbreviation = new StringBuilder();
+        String[] words = item.getName().trim().split("\\s+");
+
         for (String word : words) {
             if (!word.isEmpty()) {
                 abbreviation.append(Character.toUpperCase(word.charAt(0)));
             }
+
             if (abbreviation.length() == 2) {
                 break;
             }
         }
+
         return abbreviation.toString();
     }
 }

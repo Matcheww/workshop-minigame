@@ -1,5 +1,6 @@
 package com.matcheww.workshop.controller;
 
+import com.matcheww.workshop.model.CoalOre;
 import com.matcheww.workshop.model.CraftingRecipe;
 import com.matcheww.workshop.model.CraftingTable;
 import com.matcheww.workshop.model.Furnace;
@@ -12,7 +13,13 @@ import com.matcheww.workshop.model.ItemStack;
 import com.matcheww.workshop.model.OakLog;
 import com.matcheww.workshop.model.RecipeBank;
 import com.matcheww.workshop.model.SmeltingRecipe;
+import com.matcheww.workshop.model.Slot;
+import com.matcheww.workshop.model.Stick;
 import com.matcheww.workshop.model.WoodenPlanks;
+
+import java.util.List;
+import java.util.Random;
+import java.util.function.Supplier;
 
 /**
  * Controller layer. This is the single composition point for every Model
@@ -30,6 +37,23 @@ import com.matcheww.workshop.model.WoodenPlanks;
  */
 public class GameController {
 
+    /**
+     * Every currently known Item subclass, as factories rather than shared
+     * instances - each slot gets its own fresh Item, consistent with how
+     * the rest of the app already constructs items. Adding a new Item
+     * subclass later only means adding one line here, not touching the
+     * random-fill logic itself.
+     */
+    private static final List<Supplier<Item>> ITEM_FACTORIES = List.of(
+            OakLog::new,
+            WoodenPlanks::new,
+            Stick::new,
+            CoalOre::new,
+            IronOre::new
+    );
+
+    private static final int MAX_RANDOM_QUANTITY = 20;
+
     private final Hotbar hotbar;
     private final Inventory inventory;
     private final ItemContainer itemContainer;
@@ -37,6 +61,7 @@ public class GameController {
     private final Furnace furnace;
     private final RecipeBank recipeBank;
     private final DragAndDropController dragAndDropController;
+    private final Random random = new Random();
 
     public GameController() {
         this.hotbar = new Hotbar();
@@ -46,7 +71,23 @@ public class GameController {
         this.furnace = new Furnace();
         this.recipeBank = new RecipeBank();
         this.dragAndDropController = new DragAndDropController();
+        populateItemContainer();
         seedRecipes();
+    }
+
+    /**
+     * Fills every slot in the item container with a random item type and a
+     * random quantity - the pool of items the player can drag into their
+     * inventory, craft, or smelt. This is initial game setup (deciding what
+     * the item pool starts with), not a persistent game rule, so it lives
+     * here rather than in the Model.
+     */
+    private void populateItemContainer() {
+        for (Slot slot : itemContainer.getSlots()) {
+            Item item = ITEM_FACTORIES.get(random.nextInt(ITEM_FACTORIES.size())).get();
+            int quantity = 1 + random.nextInt(Math.min(MAX_RANDOM_QUANTITY, item.getMaxStackSize()));
+            slot.addItem(item, quantity);
+        }
     }
 
     /**
@@ -65,11 +106,9 @@ public class GameController {
                 {null, null, null},
                 {null, null, null}
         };
-        recipeBank.registerCraftingRecipe(
-                new CraftingRecipe(stickPattern, new ItemStack(new WoodenPlanks(), 4)));
-
-        recipeBank.registerSmeltingRecipe(
-                new SmeltingRecipe(new IronOre(), new ItemStack(new WoodenPlanks(), 1), 5));
+        
+        recipeBank.registerCraftingRecipe(new CraftingRecipe(stickPattern, new ItemStack(new WoodenPlanks(), 4)));
+        recipeBank.registerSmeltingRecipe(new SmeltingRecipe(new IronOre(), new ItemStack(new WoodenPlanks(), 1), 5));
     }
 
     public Hotbar getHotbar() {

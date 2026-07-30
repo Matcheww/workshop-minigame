@@ -6,6 +6,7 @@ import javafx.geometry.Pos;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressBar;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 
 /**
@@ -30,6 +31,7 @@ public class FurnaceView extends VBox {
         super(6);
         getStyleClass().add("furnace-view");
         setAlignment(Pos.CENTER);
+        setMaxSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE);
 
         inputSlotView = new SlotView(furnace.getInputSlot());
         fuelSlotView = new SlotView(furnace.getFuelSlot());

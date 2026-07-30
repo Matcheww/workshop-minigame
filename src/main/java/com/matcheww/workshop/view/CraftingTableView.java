@@ -5,6 +5,7 @@ import com.matcheww.workshop.model.CraftingTable;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Region;
 
 /**
  * View layer. Composes the 3x3 crafting grid (a ContainerView) with a
@@ -27,6 +28,7 @@ public class CraftingTableView extends HBox {
         super(12);
         getStyleClass().add("crafting-table-view");
         setAlignment(Pos.CENTER);
+        setMaxSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE);
 
         gridView = new ContainerView(craftingTable, CraftingTable.COLS, dragAndDropController);
 

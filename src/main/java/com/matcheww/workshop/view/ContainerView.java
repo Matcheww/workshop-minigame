@@ -4,6 +4,7 @@ import com.matcheww.workshop.controller.DragAndDropController;
 import com.matcheww.workshop.model.Container;
 import com.matcheww.workshop.model.Slot;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.Region;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,6 +31,13 @@ public class ContainerView extends GridPane {
         getStyleClass().add("container-view");
         setHgap(4);
         setVgap(4);
+        // A GridPane is resizable and has no max size cap by default, so a
+        // parent that stretches its children (e.g. an HBox, or BorderPane's
+        // center region) would otherwise stretch this grid taller/wider
+        // than its rows actually need, leaving its content anchored at the
+        // top-left of the extra space instead of where a sibling node's
+        // own alignment expects it to be.
+        setMaxSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE);
 
         List<Slot> slots = container.getSlots();
         for (int i = 0; i < slots.size(); i++) {
