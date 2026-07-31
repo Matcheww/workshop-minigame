@@ -6,6 +6,8 @@ import com.matcheww.workshop.model.Slot;
 import com.matcheww.workshop.view.DragGhostView;
 import com.matcheww.workshop.view.SlotView;
 import javafx.geometry.Bounds;
+import javafx.scene.Scene;
+import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.Pane;
 
@@ -16,29 +18,33 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 /**
- * Controller layer. The single, central handler for every drag gesture
- * across every SlotView in the application, regardless of which container
- * it belongs to - one class instead of duplicating drag logic per
- * container view.
+ * Controller layer. Implements Minecraft Java Edition's click-based
+ * inventory interaction model: a single left-click picks a stack up onto
+ * the cursor (it keeps following the mouse even with no button held,
+ * until the next click places it), a press-drag-release across several
+ * slots evenly distributes the held stack among them, and a right-click
+ * drops exactly one item at a time.
  *
- * Belongs in the Controller layer: it validates whether a move is legal,
- * invokes the mutating Slot/CraftingTable methods that actually move an
- * ItemStack, and updates the affected SlotViews afterward.
+ * Belongs in the Controller layer: it decides what counts as a valid
+ * placement, invokes the mutating Slot methods that actually move
+ * ItemStacks, and updates the affected SlotViews afterward.
  *
  * Does NOT belong in the Model layer: it contains no rules about what a
- * Slot or Item fundamentally is - it only orchestrates existing methods.
- * Does NOT belong in the View layer: it never constructs a JavaFX
- * Region/Label or sets a style itself - all rendering decisions stay
- * inside SlotView/DragGhostView's own methods.
+ * Slot or Item fundamentally is, only how a player's clicks translate
+ * into calls on the existing Slot API. Does NOT belong in the View
+ * layer: it never constructs a JavaFX Region/Label or sets a style
+ * itself - all rendering decisions stay inside SlotView/DragGhostView's
+ * own methods.
  *
- * This class deliberately knows nothing about CraftingTable or Furnace by
- * name. Two small extension points keep it that way:
- * - addMoveListener(): any Controller that cares "did anything move" can
- *   subscribe and re-check its own slots, rather than this class knowing
- *   which slots belong to which feature.
- * - registerCraftingOutput(): the one genuinely special case (see its
- *   own comment below), expressed as a plugged-in Supplier rather than an
- *   instanceof check against CraftingTable.
+ * Architecture note: earlier this app used per-SlotView press/drag/
+ * release handlers, which worked for a single continuous "move from A to
+ * B" gesture. That approach cannot express Minecraft's actual model,
+ * where pickup and placement are two separate clicks and the held stack
+ * must keep following the cursor with no button held in between. So
+ * input is handled globally instead, via Scene-level event filters plus
+ * the same bounds-based hit-testing (findSlotViewAt) this class already
+ * used for drop targets - register() now only builds the list of known
+ * SlotViews for that hit-testing, it no longer wires per-node handlers.
  */
 public class DragAndDropController {
 
@@ -48,75 +54,243 @@ public class DragAndDropController {
     private final Map<SlotView, Supplier<ItemStack>> craftingOutputActions = new HashMap<>();
     private final Map<SlotView, Runnable> craftingOutputCallbacks = new HashMap<>();
 
-    private SlotView sourceSlotView;
+    /** The stack currently riding the cursor, or null if the cursor is empty. */
+    private ItemStack heldStack;
 
-    /** Mounts this controller's drag ghost into the given overlay layer. Must be called once, before any registration. */
+    /** Unique slots visited since the current mouse button went down, in visit order. */
+    private final List<SlotView> currentPath = new ArrayList<>();
+
+    /** Mounts this controller's drag ghost into the given overlay layer. */
     public void attachOverlay(Pane overlay) {
         overlay.getChildren().add(dragGhost);
     }
 
-    /** Wires a SlotView's mouse gestures to this controller. Called once per SlotView, typically by ContainerView. */
-    public void register(SlotView slotView) {
-        registeredSlotViews.add(slotView);
-        slotView.setOnMousePressed(event -> beginDrag(slotView, event));
-        slotView.setOnMouseDragged(this::updateDrag);
-        slotView.setOnMouseReleased(this::endDrag);
+    /**
+     * Hooks this controller into the Scene's mouse events. Must be called
+     * once, after the Scene exists - typically right after GameApplication
+     * constructs it, since global filters (rather than per-node handlers)
+     * are what let the held stack keep following the cursor over empty
+     * background, not just over registered slots.
+     */
+    public void attachInputHandling(Scene scene) {
+        scene.addEventFilter(MouseEvent.MOUSE_PRESSED, this::onPressed);
+        scene.addEventFilter(MouseEvent.MOUSE_DRAGGED, event -> onCursorMoved(event, true));
+        scene.addEventFilter(MouseEvent.MOUSE_MOVED, event -> onCursorMoved(event, false));
+        scene.addEventFilter(MouseEvent.MOUSE_RELEASED, this::onReleased);
     }
 
-    /** Notified after every successful move anywhere in the app. Cheap re-checks (e.g. "does the grid still match a recipe?") are expected on the other end. */
+    /** Registers a SlotView so it can be found by hit-testing. Called once per SlotView, typically by ContainerView. */
+    public void register(SlotView slotView) {
+        registeredSlotViews.add(slotView);
+    }
+
+    /** Notified after every successful pickup/placement anywhere in the app. Cheap re-checks (e.g. "does the grid still match a recipe?") are expected on the other end. */
     public void addMoveListener(Runnable listener) {
         moveListeners.add(listener);
     }
 
     /**
      * Registers the crafting output slot's special pickup behavior: rather
-     * than removing whatever ItemStack is currently sitting in the slot
-     * (which is only ever a preview written by CraftingController, not
-     * real consumed state), dragging out of this slot calls craftAction
+     * than removing whatever ItemStack is sitting in the slot (which is
+     * only ever a preview written by CraftingController, not real consumed
+     * state), clicking this slot with an empty cursor calls craftAction
      * (craftingTable::craft) to actually consume the grid, and afterCollect
-     * (craftingController::onGridChanged) to refresh the preview for
-     * whatever recipe, if any, the grid still matches afterward.
+     * (craftingController::onGridChanged) to refresh the preview afterward.
+     * This slot is not a valid placement target - clicking it while
+     * already holding a stack, or including it in a distribution drag,
+     * does nothing.
      */
     public void registerCraftingOutput(SlotView outputView, Supplier<ItemStack> craftAction, Runnable afterCollect) {
         registeredSlotViews.add(outputView);
         craftingOutputActions.put(outputView, craftAction);
         craftingOutputCallbacks.put(outputView, afterCollect);
-        outputView.setOnMousePressed(event -> beginDrag(outputView, event));
-        outputView.setOnMouseDragged(this::updateDrag);
-        outputView.setOnMouseReleased(this::endDrag);
     }
 
-    private void beginDrag(SlotView slotView, MouseEvent event) {
-        if (slotView.getSlot().isEmpty()) {
+    private void onPressed(MouseEvent event) {
+        if (event.getButton() == MouseButton.SECONDARY) {
+            handleRightClick(event);
             return;
         }
-        sourceSlotView = slotView;
-        dragGhost.showFor(slotView.getSlot().getItemStack(), event.getSceneX(), event.getSceneY());
+        if (event.getButton() != MouseButton.PRIMARY) {
+            return;
+        }
+        currentPath.clear();
+
+        SlotView pressedSlot = findSlotViewAt(event.getSceneX(), event.getSceneY());
+        if (pressedSlot == null) {
+            return;
+        }
+
+        if (heldStack == null) {
+            if (craftingOutputActions.containsKey(pressedSlot)) {
+                pickUpCraftingOutput(pressedSlot, event);
+            } else if (!pressedSlot.getSlot().isEmpty()) {
+                pickUpFromSlot(pressedSlot, event);
+            }
+        } else {
+            addToPathIfEligible(pressedSlot);
+        }
     }
 
-    private void updateDrag(MouseEvent event) {
-        if (sourceSlotView == null) {
+    /**
+     * Right-click while holding a stack drops exactly one item into a
+     * valid slot under the cursor - empty, or already holding the same
+     * item with room to spare, matching Minecraft's "place one at a time"
+     * behavior. A self-contained action, not part of the drag-path
+     * machinery above: it fires once per right-click and never touches
+     * currentPath. Does nothing if the cursor is empty, no slot is under
+     * the cursor, the slot is not a valid target, or the slot is the
+     * crafting output preview (not a real placement target).
+     */
+    private void handleRightClick(MouseEvent event) {
+        if (heldStack == null) {
+            return;
+        }
+
+        SlotView target = findSlotViewAt(event.getSceneX(), event.getSceneY());
+        if (target == null || craftingOutputActions.containsKey(target)) {
+            return;
+        }
+
+        Slot slot = target.getSlot();
+        if (!slotAcceptsItem(slot, heldStack.getItem())) {
+            return;
+        }
+
+        int before = quantityOf(slot);
+        slot.addItem(heldStack.getItem(), 1);
+        int absorbed = quantityOf(slot) - before;
+        if (absorbed <= 0) {
+            return;
+        }
+        target.refresh();
+
+        int remaining = heldStack.getQuantity() - absorbed;
+        if (remaining > 0) {
+            heldStack = new ItemStack(heldStack.getItem(), remaining);
+            dragGhost.showFor(heldStack, event.getSceneX(), event.getSceneY());
+        } else {
+            heldStack = null;
+            dragGhost.hide();
+        }
+        notifyMoveListeners();
+    }
+
+    private void onCursorMoved(MouseEvent event, boolean buttonHeld) {
+        if (heldStack == null) {
             return;
         }
         dragGhost.moveTo(event.getSceneX(), event.getSceneY());
-    }
 
-    private void endDrag(MouseEvent event) {
-        if (sourceSlotView == null) {
-            return;
-        }
-        dragGhost.hide();
-
-        SlotView targetSlotView = findSlotViewAt(event.getSceneX(), event.getSceneY());
-        if (targetSlotView != null && targetSlotView != sourceSlotView) {
-            if (craftingOutputActions.containsKey(sourceSlotView)) {
-                collectCraftingOutput(sourceSlotView, targetSlotView);
-            } else {
-                moveItem(sourceSlotView, targetSlotView);
-                notifyMoveListeners();
+        if (buttonHeld) {
+            SlotView current = findSlotViewAt(event.getSceneX(), event.getSceneY());
+            if (current != null) {
+                addToPathIfEligible(current);
             }
         }
-        sourceSlotView = null;
+    }
+
+    private void onReleased(MouseEvent event) {
+        if (event.getButton() != MouseButton.PRIMARY) {
+            return;
+        }
+        if (heldStack != null && !currentPath.isEmpty()) {
+            distributeAcrossPath();
+        }
+        currentPath.clear();
+    }
+
+    private void addToPathIfEligible(SlotView slotView) {
+        if (!craftingOutputActions.containsKey(slotView) && !currentPath.contains(slotView)) {
+            currentPath.add(slotView);
+        }
+    }
+
+    private void pickUpFromSlot(SlotView slotView, MouseEvent event) {
+        Slot slot = slotView.getSlot();
+        heldStack = slot.removeItem(slot.getItemStack().getQuantity());
+        slotView.refresh();
+        dragGhost.showFor(heldStack, event.getSceneX(), event.getSceneY());
+        notifyMoveListeners();
+    }
+
+    private void pickUpCraftingOutput(SlotView outputView, MouseEvent event) {
+        Slot previewSlot = outputView.getSlot();
+        if (previewSlot.isEmpty()) {
+            return;
+        }
+
+        ItemStack crafted = craftingOutputActions.get(outputView).get();
+        if (crafted == null) {
+            return;
+        }
+
+        // A fresh copy - craft() returns the recipe's own output ItemStack
+        // reference directly, so holding that reference on the cursor
+        // would let placing/merging it later mutate the recipe's
+        // permanent template.
+        heldStack = new ItemStack(crafted.getItem(), crafted.getQuantity());
+        dragGhost.showFor(heldStack, event.getSceneX(), event.getSceneY());
+
+        craftingOutputCallbacks.get(outputView).run();
+    }
+
+    /**
+     * Places the held stack into a single valid slot (path of size 1), or
+     * evenly distributes it across every valid slot visited during a drag
+     * (path of size 2+). Skips incompatible or full slots entirely rather
+     * than letting them absorb a partial share. Any amount that could not
+     * be placed - because a target's real capacity fell short of its
+     * fair share, or because no valid slot existed at all - stays on the
+     * cursor. Total placed + total remaining on the cursor always equals
+     * the amount held before this call: nothing is lost or duplicated.
+     */
+    private void distributeAcrossPath() {
+        List<SlotView> validViews = new ArrayList<>();
+        for (SlotView view : currentPath) {
+            if (slotAcceptsItem(view.getSlot(), heldStack.getItem())) {
+                validViews.add(view);
+            }
+        }
+
+        if (validViews.isEmpty()) {
+            return;
+        }
+
+        int totalHeld = heldStack.getQuantity();
+        int slotCount = validViews.size();
+        int baseShare = totalHeld / slotCount;
+        int remainder = totalHeld % slotCount;
+
+        int totalPlaced = 0;
+        for (int i = 0; i < validViews.size(); i++) {
+            int share = baseShare + (i < remainder ? 1 : 0);
+            if (share <= 0) {
+                continue;
+            }
+            Slot target = validViews.get(i).getSlot();
+            int before = quantityOf(target);
+            target.addItem(heldStack.getItem(), share);
+            totalPlaced += quantityOf(target) - before;
+            validViews.get(i).refresh();
+        }
+
+        int remaining = totalHeld - totalPlaced;
+        if (remaining > 0) {
+            heldStack = new ItemStack(heldStack.getItem(), remaining);
+        } else {
+            heldStack = null;
+            dragGhost.hide();
+        }
+        notifyMoveListeners();
+    }
+
+    private boolean slotAcceptsItem(Slot slot, Item item) {
+        if (slot.isEmpty()) {
+            return true;
+        }
+        ItemStack existing = slot.getItemStack();
+        return existing.getItem().equals(item) && existing.getRemainingCapacity() > 0;
     }
 
     private SlotView findSlotViewAt(double sceneX, double sceneY) {
@@ -127,78 +301,6 @@ public class DragAndDropController {
             }
         }
         return null;
-    }
-
-    /**
-     * Moves as much of the source stack into the target as fits, leaving
-     * any remainder in the source - correct for a full move into an empty
-     * slot, a partial merge that overflows, and a no-op when the target
-     * holds an incompatible item or is already full. Computed from the
-     * target's quantity before and after calling addItem(), since addItem
-     * can partially succeed even when it returns false.
-     */
-    private void moveItem(SlotView sourceView, SlotView targetView) {
-        Slot source = sourceView.getSlot();
-        Slot target = targetView.getSlot();
-
-        if (source.isEmpty()) {
-            return;
-        }
-
-        ItemStack sourceStack = source.getItemStack();
-        Item item = sourceStack.getItem();
-        int beforeQuantity = quantityOf(target);
-
-        target.addItem(item, sourceStack.getQuantity());
-
-        int amountAbsorbed = quantityOf(target) - beforeQuantity;
-        if (amountAbsorbed > 0) {
-            source.removeItem(amountAbsorbed);
-        }
-
-        sourceView.refresh();
-        targetView.refresh();
-    }
-
-    /**
-     * Only crafts if the full result will fit in the target - crafting
-     * consumes the grid immediately and irreversibly, so we must know the
-     * result has somewhere to go before calling craftAction at all, or a
-     * result that didn't fully fit would simply be destroyed.
-     */
-    private void collectCraftingOutput(SlotView sourceView, SlotView targetView) {
-        Slot previewSlot = sourceView.getSlot();
-        if (previewSlot.isEmpty()) {
-            return;
-        }
-
-        ItemStack previewStack = previewSlot.getItemStack();
-        Slot target = targetView.getSlot();
-
-        if (!targetCanFullyAccept(target, previewStack)) {
-            return;
-        }
-
-        ItemStack crafted = craftingOutputActions.get(sourceView).get();
-        if (crafted == null) {
-            return;
-        }
-
-        target.addItem(crafted.getItem(), crafted.getQuantity());
-        targetView.refresh();
-
-        craftingOutputCallbacks.get(sourceView).run();
-    }
-
-    private boolean targetCanFullyAccept(Slot target, ItemStack stack) {
-        if (target.isEmpty()) {
-            return stack.getQuantity() <= stack.getItem().getMaxStackSize();
-        }
-        ItemStack targetStack = target.getItemStack();
-        if (!targetStack.getItem().equals(stack.getItem())) {
-            return false;
-        }
-        return targetStack.getRemainingCapacity() >= stack.getQuantity();
     }
 
     private void notifyMoveListeners() {

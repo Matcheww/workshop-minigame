@@ -11,11 +11,13 @@ import com.matcheww.workshop.model.ItemStack;
 import com.matcheww.workshop.model.RecipeBank;
 import com.matcheww.workshop.model.SmeltingRecipe;
 import com.matcheww.workshop.model.Slot;
+import com.matcheww.workshop.model.minecraftitems.Charcoal;
 import com.matcheww.workshop.model.minecraftitems.Coal;
 import com.matcheww.workshop.model.minecraftitems.IronIngot;
 import com.matcheww.workshop.model.minecraftitems.IronOre;
 import com.matcheww.workshop.model.minecraftitems.OakLog;
 import com.matcheww.workshop.model.minecraftitems.Stick;
+import com.matcheww.workshop.model.minecraftitems.Torch;
 import com.matcheww.workshop.model.minecraftitems.WoodenPlanks;
 import com.matcheww.workshop.model.minecraftitems.IronHelmet;
 import com.matcheww.workshop.model.minecraftitems.IronChestplate;
@@ -54,12 +56,9 @@ public class GameController {
             WoodenPlanks::new,
             Stick::new,
             Coal::new,
+            Charcoal::new,
             IronOre::new,
-            IronIngot::new,
-            IronHelmet::new,
-            IronChestplate::new,
-            IronLeggings::new,
-            IronBoots::new
+            IronIngot::new
     );
 
     private static final int MAX_RANDOM_QUANTITY = 20;
@@ -105,14 +104,100 @@ public class GameController {
      * using only the Item subclasses that already exist in the Model.
      */
     private void seedRecipes() {
-        Item[][] stickPattern = {
+        Item[][] woodenPlanksPattern = {
                 {new OakLog(), null, null},
                 {null, null, null},
                 {null, null, null}
         };
+        Item[][] woodenPlanksPattern2 = {
+                {null, new OakLog(), null},
+                {null, null, null},
+                {null, null, null}
+        };
+        Item[][] woodenPlanksPattern3 = {
+                {null, null, new OakLog()},
+                {null, null, null},
+                {null, null, null}
+        };
+        Item[][] woodenPlanksPattern4 = {
+                {null, null, null},
+                {new OakLog(), null, null},
+                {null, null, null}
+        };
+        Item[][] woodenPlanksPattern5 = {
+                {null, null, null},
+                {null, new OakLog(), null},
+                {null, null, null}
+        };
+        Item[][] woodenPlanksPattern6 = {
+                {null, null, null},
+                {null, null, new OakLog()},
+                {null, null, null}
+        };
+        Item[][] woodenPlanksPattern7 = {
+                {null, null, null},
+                {null, null, null},
+                {new OakLog(), null, null}
+        };
+        Item[][] woodenPlanksPattern8 = {
+                {null, null, null},
+                {null, null, null},
+                {null, new OakLog(), null}
+        };
+        Item[][] woodenPlanksPattern9 = {
+                {null, null, null},
+                {null, null, null},
+                {null, null, new OakLog()}
+        };
+        Item[][] ironHelmetPattern = {
+                {new IronIngot(), new IronIngot(), new IronIngot()},
+                {new IronIngot(), null, new IronIngot()},
+                {null, null, null}
+        };
+        Item[][] ironHelmetPattern2 = {
+                {null, null, null},
+                {new IronIngot(), new IronIngot(), new IronIngot()},
+                {new IronIngot(), null, new IronIngot()}
+        };
+        Item[][] ironChestplatePattern = {
+                {new IronIngot(), null, new IronIngot()},
+                {new IronIngot(), new IronIngot(), new IronIngot()},
+                {new IronIngot(), new IronIngot(), new IronIngot()}
+        };
+        Item[][] ironLeggingsPattern = {
+                {new IronIngot(), new IronIngot(), new IronIngot()},
+                {new IronIngot(), null, new IronIngot()},
+                {new IronIngot(), null, new IronIngot()}
+        };
+        Item[][] ironBootsPattern = {
+                {null, null, null},
+                {new IronIngot(), null, new IronIngot()},
+                {new IronIngot(), null, new IronIngot()}
+        };
+        Item[][] ironBootsPattern2 = {
+                {new IronIngot(), null, new IronIngot()},
+                {new IronIngot(), null, new IronIngot()},
+                {null, null, null}
+        };
         
-        recipeBank.registerCraftingRecipe(new CraftingRecipe(stickPattern, new ItemStack(new WoodenPlanks(), 4)));
+        recipeBank.registerCraftingRecipe(new CraftingRecipe(woodenPlanksPattern, new ItemStack(new WoodenPlanks(), 4)));
+        recipeBank.registerCraftingRecipe(new CraftingRecipe(woodenPlanksPattern2, new ItemStack(new WoodenPlanks(), 4)));
+        recipeBank.registerCraftingRecipe(new CraftingRecipe(woodenPlanksPattern3, new ItemStack(new WoodenPlanks(), 4)));
+        recipeBank.registerCraftingRecipe(new CraftingRecipe(woodenPlanksPattern4, new ItemStack(new WoodenPlanks(), 4)));
+        recipeBank.registerCraftingRecipe(new CraftingRecipe(woodenPlanksPattern5, new ItemStack(new WoodenPlanks(), 4)));
+        recipeBank.registerCraftingRecipe(new CraftingRecipe(woodenPlanksPattern6, new ItemStack(new WoodenPlanks(), 4)));
+        recipeBank.registerCraftingRecipe(new CraftingRecipe(woodenPlanksPattern7, new ItemStack(new WoodenPlanks(), 4)));
+        recipeBank.registerCraftingRecipe(new CraftingRecipe(woodenPlanksPattern8, new ItemStack(new WoodenPlanks(), 4)));
+        recipeBank.registerCraftingRecipe(new CraftingRecipe(woodenPlanksPattern9, new ItemStack(new WoodenPlanks(), 4)));
+        recipeBank.registerCraftingRecipe(new CraftingRecipe(ironHelmetPattern, new ItemStack(new IronHelmet(), 1)));
+        recipeBank.registerCraftingRecipe(new CraftingRecipe(ironHelmetPattern2, new ItemStack(new IronHelmet(), 1)));
+        recipeBank.registerCraftingRecipe(new CraftingRecipe(ironChestplatePattern, new ItemStack(new IronChestplate(), 1)));
+        recipeBank.registerCraftingRecipe(new CraftingRecipe(ironLeggingsPattern, new ItemStack(new IronLeggings(), 1)));
+        recipeBank.registerCraftingRecipe(new CraftingRecipe(ironBootsPattern, new ItemStack(new IronBoots(), 1)));
+        recipeBank.registerCraftingRecipe(new CraftingRecipe(ironBootsPattern2, new ItemStack(new IronBoots(), 1)));
+
         recipeBank.registerSmeltingRecipe(new SmeltingRecipe(new IronOre(), new ItemStack(new IronIngot(), 1), 10));
+        recipeBank.registerSmeltingRecipe(new SmeltingRecipe(new OakLog(), new ItemStack(new Charcoal(), 1), 10));
     }
 
     public Hotbar getHotbar() {

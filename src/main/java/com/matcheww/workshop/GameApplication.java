@@ -57,6 +57,7 @@ public class GameApplication extends Application {
 
         Scene scene = new Scene(gameView, WINDOW_WIDTH, WINDOW_HEIGHT);
         scene.getStylesheets().add(getClass().getResource("/css/minecraft.css").toExternalForm());
+        gameController.getDragAndDropController().attachInputHandling(scene);
 
         primaryStage.setTitle("Workshop Minigame");
         primaryStage.setScene(scene);
